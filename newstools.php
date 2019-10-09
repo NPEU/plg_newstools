@@ -36,7 +36,7 @@ class plgSystemNewsTools extends JPlugin
         }
 
         if (!($isNew && $context == 'com_content.article')) {
-            #return; // Only run for new articles
+            return; // Only run for new articles
         }
 
         if (!in_array($data['catid'], $this->params->get('applicable_categories'))) {
@@ -49,8 +49,8 @@ class plgSystemNewsTools extends JPlugin
         $brand_alias = implode('-', $brand);*/
 
 
-        $stub_catid = explode('-', $data['attribs']['stub_catid']);
-
+        $stub_catid = $data['attribs']['stub_catid'];
+        #echo '<pre>'; var_dump($stub_catid); echo '</pre>'; exit;
         if (empty($stub_catid)) {
             return; // Only run if a brand_cat_id set.
         }
@@ -63,9 +63,20 @@ class plgSystemNewsTools extends JPlugin
 
         $title_prefix = trim(trim($this->params->get('title_prefix')), ':');
         $title_prefix_alias = JApplication::stringURLSafe($title_prefix);
+        
+        // We need to find the URL f the category blog that will load this item:
+        $query = $db->getQuery(true);
+        $query->select($db->quoteName(array('path')));
+        $query->from($db->quoteName('#__menu'));
+        $query->where($db->quoteName('link') . ' = ' . $db->quote('index.php?option=com_content&view=category&layout=blog&id=' . $data['catid']));
+
+        $db->setQuery($query);
+        $path = $db->loadResult();
+
+        $url = JURI::root() . $path . '/' . $item->id . '-' . $data['alias'];
 
         $article_data = array(
-            'id' => 0,
+            'id'        => 0,
             'catid'     => $stub_catid,
             'title'     => $title_prefix . ': ' . $data['title'],
             'alias'     => $title_prefix_alias  . '-' . $data['alias'],
@@ -92,7 +103,7 @@ class plgSystemNewsTools extends JPlugin
                 'xreference' => ''
             ))
         );
-
+        #echo '<pre>'; var_dump($article_data); echo '</pre>'; exit;
         $article_id = $this->createArticle($article_data);
 
         if(!$article_id){
@@ -127,6 +138,8 @@ class plgSystemNewsTools extends JPlugin
             $postData = $app->input->post->getArray();
             $catid = $postData['jform']['catid'];
         } else {
+            // Ensure it is an object
+            $data = (object) $data;
             $catid = $data->catid;
         }
 
@@ -136,7 +149,7 @@ class plgSystemNewsTools extends JPlugin
 
         // Add the extra fields to the form.
         JForm::addFormPath(__DIR__ . '/forms');
-        $form->loadFile('newsstubs', false);
+        $form->loadFile('newstools', false);
         return true;
     }
 
@@ -148,7 +161,7 @@ class plgSystemNewsTools extends JPlugin
      *
      * @return  boolean
      */
-    public function onContentPrepareData($context, $data)
+    /*public function onContentPrepareData($context, $data)
     {
         #echo '<pre>'; var_dump($data); echo '</pre>'; exit;
         // Check we are manipulating a valid form.
@@ -158,7 +171,7 @@ class plgSystemNewsTools extends JPlugin
         if (is_object($data)) {
 
         }
-    }
+    }*/
 
     protected function createArticle($data)
     {
@@ -172,10 +185,10 @@ class plgSystemNewsTools extends JPlugin
         require_once $basePath.'/models/article.php';
         $article_model =  JModelLegacy::getInstance('Article','ContentModel');
         // or  $config= array(); $article_model =  new ContentModelArticle($config);
-        if(!$article_model->save($data)){
+        if (!$article_model->save($data)) {
             $err_msg = $article_model->getError();
             return false;
-        }else{
+        } else {
             $id = $article_model->getItem()->id;
             return $id;
         }
