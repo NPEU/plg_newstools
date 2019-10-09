@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
     <update>
-        <name>NPEU: plg_newsstubs</name>
-        <description>Joomla! plg_newsstubs plugin</description>
-        <element>newsstubs</element>
+        <name>NPEU: plg_newstools</name>
+        <description>Joomla! plg_newstools plugin</description>
+        <element>newstools</element>
         <type>plugin</type>
         <folder>system</folder>
         <version>1.0.0</version>
         <client>site</client>
-        <infourl title="NPEU: plg_newsstubs">https://github.com/NPEU/plg_newsstubs/releases/tag/v1.0.0</infourl>
+        <infourl title="NPEU: plg_newstools">https://github.com/NPEU/plg_newstools/releases/tag/v1.0.0</infourl>
         <downloads>
-            <downloadurl type="full" format="zip">https://github.com/NPEU/plg_newsstubs/archive/v1.0.0.zip</downloadurl>
+            <downloadurl type="full" format="zip">https://github.com/NPEU/plg_newstools/archive/v1.0.0.zip</downloadurl>
         </downloads>
         <targetplatform name="joomla" />
         <tags>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" version="3.2.0" method="upgrade">
+
+    <name>PLG_SYSTEM_NEWSTOOLS</name>
+    <author>Andy Kirk</author>
+    <authorEmail>andy.kirk@npeu.ox.ac.uk</authorEmail>
+    <authorUrl>https://www.npeu.ox.ac.uk</authorUrl>
+    <creationDate>October 2019</creationDate>
+    <copyright>(C) NPEU 2019</copyright>
+    <license>MIT License; see LICENSE.md</license>
+
+    <!--  The version string is recorded in the components table -->
+    <version>1.0.0</version>
+    <!-- The description is optional and defaults to the name -->
+    <description>PLG_SYSTEM_NEWSTOOLS_XML_DESCRIPTION</description>
+
+    <updateservers>
+        <!-- Note: No spaces or linebreaks allowed between the server tags -->
+        <server type="extension" name="NPEU: plg_newstools Update Site">https://raw.githubusercontent.com/NPEU/plg_newstools/master/update-manifest.xml</server>
+    </updateservers>
+    
+    <files>
+        <filename plugin="newstools">newstools.php</filename>
+        <filename>index.html</filename>
+        <folder>forms</folder>
+        <folder>language</folder>
+    </files>
+
+        
+    <config>
+         <fields name="params">
+            <fieldset name="basic">
+               <field
+                  name="applicable_categories"
+                  type="category"
+                  label="PLG_SYSTEM_NEWSTOOLS_CONFIG_CATEGORIES_LABEL"
+                  description="PLG_SYSTEM_NEWSTOOLS_CONFIG_CATEGORIES_DESC"
+                  extension="com_content"
+                  multiple="true"
+               />
+               <field
+                  name="title_prefix"
+                  type="text"
+                  label="PLG_SYSTEM_NEWSTOOLS_CONFIG_TITLE_PREFIX_LABEL"
+                  description="PLG_SYSTEM_NEWSTOOLS_CONFIG_TITLE_PREFIX_DESC"
+               />
+               <field
+                  name="readmore_message"
+                  type="text"
+                  label="PLG_SYSTEM_NEWSTOOLS_CONFIG_READMORE_LABEL"
+                  description="PLG_SYSTEM_NEWSTOOLS_CONFIG_READMORE_DESC"
+               />
+            </fieldset>
+         </fields>
+      </config>
+
+
+</extension>
