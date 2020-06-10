@@ -52,7 +52,7 @@ class plgSystemNewsTools extends JPlugin
         $stub_catid = $data['attribs']['stub_catid'];
         #echo '<pre>'; var_dump($stub_catid); echo '</pre>'; exit;
         if (empty($stub_catid)) {
-            return; // Only run if a brand_cat_id set.
+            return; // Only run if a stub_catid set.
         }
 
         $cat = JTable::getInstance('category');
