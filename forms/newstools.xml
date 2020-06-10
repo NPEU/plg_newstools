@@ -18,9 +18,9 @@
             label="PLG_SYSTEM_NEWSTOOLS_STUB_CATID_LABEL"
             description="PLG_SYSTEM_NEWSTOOLS_STUB_CATID_DESC"
             extension="com_content"
-            default="none"
+            default=""
         >
-            <option value="none">JNONE</option>
+            <option value="">JNONE</option>
         </field>
      </fieldset>
   </fields>
