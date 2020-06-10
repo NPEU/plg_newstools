@@ -3,6 +3,12 @@
   <fields name="attribs">
      <fieldset name="newsstub" label="PLG_SYSTEM_NEWSTOOLS_FIELDSET_LABEL">
         <field
+            name="brand_note"
+            type="note"
+            label="PLG_SYSTEM_NEWSTOOLS_BRAND_NOTE_LABEL"
+            description="PLG_SYSTEM_NEWSTOOLS_BRAND_NOTE_DESC"
+        />
+        <field
             name="brand"
             type="sql"
             default="1"
@@ -11,6 +17,12 @@
             query="SELECT value, text FROM (SELECT 1 AS rank, NULL AS value, 'None' AS text UNION ALL SELECT 2 AS rank, CONCAT (alias, '-', id) AS value, name AS text FROM #__brands b WHERE b.catid = 171 ORDER BY text) a ORDER BY rank, text;"
             key_field="value"
             value_field="text"
+        />
+        <field
+            name="stub_note"
+            type="note"
+            label="PLG_SYSTEM_NEWSTOOLS_STUB_NOTE_LABEL"
+            description="PLG_SYSTEM_NEWSTOOLS_STUB_NOTE_DESC"
         />
         <field
             name="stub_catid"
