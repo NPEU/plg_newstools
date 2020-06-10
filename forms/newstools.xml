@@ -26,11 +26,13 @@
         />
         <field
             name="stub_catid"
-            type="category"
+            type="sql"
+            default="1"
             label="PLG_SYSTEM_NEWSTOOLS_STUB_CATID_LABEL"
             description="PLG_SYSTEM_NEWSTOOLS_STUB_CATID_DESC"
-            extension="com_content"
-            default=""
+            query="SELECT id AS value, title AS text FROM #__categories WHERE extension = 'com_content' AND path LIKE '%/news' ORDER BY text;"
+            key_field="value"
+            value_field="text"
         >
             <option value="">JNONE</option>
         </field>
