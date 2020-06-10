@@ -35,7 +35,11 @@ class plgSystemNewsTools extends JPlugin
             return; // Only run in admin
         }
 
-        if (!($isNew && $context == 'com_content.article')) {
+        /*if (!($isNew && $context == 'com_content.article')) {
+            return; // Only run for new articles
+        }*/
+        
+        if (!$context == 'com_content.article') {
             return; // Only run for new articles
         }
 
