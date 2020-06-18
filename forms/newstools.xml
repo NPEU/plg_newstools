@@ -27,7 +27,7 @@
         <field
             name="stub_catid"
             type="sql"
-            default="1"
+            default=""
             label="PLG_SYSTEM_NEWSTOOLS_STUB_CATID_LABEL"
             description="PLG_SYSTEM_NEWSTOOLS_STUB_CATID_DESC"
             query="SELECT id AS value, title AS text FROM #__categories WHERE extension = 'com_content' AND path LIKE '%/news' ORDER BY text;"
