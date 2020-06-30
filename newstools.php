@@ -38,12 +38,12 @@ class plgSystemNewsTools extends JPlugin
         /*if (!($isNew && $context == 'com_content.article')) {
             return; // Only run for new articles
         }*/
-        
+
         if (!$context == 'com_content.article') {
             return; // Only run for new articles
         }
 
-        if (!in_array($data['catid'], $this->params->get('applicable_categories'))) {
+        if (empty() || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
             return; // Only run for applicable catid's
         }
 
@@ -67,7 +67,7 @@ class plgSystemNewsTools extends JPlugin
 
         $title_prefix = trim(trim($this->params->get('title_prefix')), ':');
         $title_prefix_alias = JApplication::stringURLSafe($title_prefix);
-        
+
         // We need to find the URL f the category blog that will load this item:
         $query = $db->getQuery(true);
         $query->select($db->quoteName(array('path')));
