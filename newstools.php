@@ -43,7 +43,7 @@ class plgSystemNewsTools extends JPlugin
             return; // Only run for new articles
         }
 
-        if (empty() || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
+        if (empty($data['catid']) || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
             return; // Only run for applicable catid's
         }
 
