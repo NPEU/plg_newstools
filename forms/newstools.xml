@@ -36,6 +36,13 @@
         >
             <option value="">JNONE</option>
         </field>
+        <field
+            name="stub_id"
+            type="number"
+            default=""
+            label="PLG_SYSTEM_NEWSTOOLS_STUB_ID_LABEL"
+            description="PLG_SYSTEM_NEWSTOOLS_STUB_ID_DESC"
+        />
      </fieldset>
   </fields>
 </form>

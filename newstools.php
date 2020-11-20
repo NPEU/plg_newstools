@@ -15,6 +15,91 @@ defined('_JEXEC') or die;
 class plgSystemNewsTools extends JPlugin
 {
     protected $autoloadLanguage = true;
+    protected $stubCreated = false;
+    protected $stubID = false;
+
+    /**
+     * The save event.
+     *
+     * @param   string   $context  The context
+     * @param   JTable   $item     The table
+     * @param   boolean  $isNew    Is new item
+     * @param   array    $data     The validated data
+     *
+     * @return  boolean
+     */
+    public function onContentBeforeSave($context, $item, $isNew, $data = array())
+    {
+        $app = JFactory::getApplication();
+        $db  = JFactory::getDbo();
+
+        if (!$app->isAdmin()) {
+            return; // Only run in admin
+        }
+
+        if (!$context == 'com_content.article') {
+            return; // Only run for new articles
+        }
+
+        if (empty($data['catid']) || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
+            #echo 'Not NT<pre>'; var_dump($data); echo '</pre>'; exit;
+            return; // Only run for applicable catid's
+        }
+
+        $stub_catid = $data['attribs']['stub_catid'];
+        $stub_id    = $data['attribs']['stub_id'];
+
+        if (empty($stub_catid)) {
+            return; // Only run if a stub_catid set.
+        }
+
+        if (!empty($stub_id)) {
+            $stubCreated = true;
+            return; // But don't run if there's already been an article created.
+        }
+
+        $cat = JTable::getInstance('category');
+        $cat->load($stub_catid);
+
+        $title_prefix = trim(trim($this->params->get('title_prefix')), ':');
+        $title_prefix_alias = JApplication::stringURLSafe($title_prefix);
+
+        // Note we can't generatet the content yet as we might not have the new article id.
+        // However, we need to save the stud id in the article data so we're having to generate the
+        // stub now and update it later.
+        $content = '';
+
+        $stub_data = array(
+            'id'          => 0,
+            'catid'       => $stub_catid,
+            'title'       => $title_prefix . ': ' . $data['title'],
+            'alias'       => $title_prefix_alias  . '-' . $data['alias'],
+            'articletext' => '',
+            'introtext'   => $content,
+            'fulltext'    => '',
+            'state'       => 1,
+            'language'    => '*',
+            'access'      => 1,
+            'urls'        => '',
+            'metadata'    => json_encode(array(
+                'author'     => '',
+                'robots'     => '',
+                'rights'     => '',
+                'xreference' => ''
+            ))
+        );
+
+        $stub_id = $this->createArticle($stub_data);
+
+        $registry = Joomla\Registry\Registry::getInstance('');
+        $registry->loadString($item->attribs);
+        $registry['stub_id'] = $stub_id;
+        $new_attribs = $registry->toString();
+
+        $item->attribs = $new_attribs;
+
+        $this->stubID = $stub_id;
+    }
 
     /**
      * The save event.
@@ -24,9 +109,13 @@ class plgSystemNewsTools extends JPlugin
      * @param   boolean  $isNew    Is new item
      * @param   array    $data     The validated data
      *
+     * @return void
      */
     public function onContentAfterSave($context, $item, $isNew, $data = array())
     {
+        if ($this->stubCreated) {
+            return;
+        }
 
         $app = JFactory::getApplication();
         $db  = JFactory::getDbo();
@@ -34,10 +123,6 @@ class plgSystemNewsTools extends JPlugin
         if (!$app->isAdmin()) {
             return; // Only run in admin
         }
-
-        /*if (!($isNew && $context == 'com_content.article')) {
-            return; // Only run for new articles
-        }*/
 
         if (!$context == 'com_content.article') {
             return; // Only run for new articles
@@ -47,14 +132,9 @@ class plgSystemNewsTools extends JPlugin
             return; // Only run for applicable catid's
         }
 
-
-        /*$brand = explode('-', $data['attribs']['brand']);
-        $brand_id = array_pop($brand);
-        $brand_alias = implode('-', $brand);*/
-
-
         $stub_catid = $data['attribs']['stub_catid'];
-        #echo '<pre>'; var_dump($stub_catid); echo '</pre>'; exit;
+        $stub_id    = $this->stubID;
+
         if (empty($stub_catid)) {
             return; // Only run if a stub_catid set.
         }
@@ -62,13 +142,7 @@ class plgSystemNewsTools extends JPlugin
         $cat = JTable::getInstance('category');
         $cat->load($stub_catid);
 
-        #echo '<pre>'; var_dump($cat); echo '</pre>'; exit;
-        #echo '<pre>'; var_dump($data); echo '</pre>'; exit;
-
-        $title_prefix = trim(trim($this->params->get('title_prefix')), ':');
-        $title_prefix_alias = JApplication::stringURLSafe($title_prefix);
-
-        // We need to find the URL f the category blog that will load this item:
+        // We need to find the URL of the category blog that will load this item:
         $query = $db->getQuery(true);
         $query->select($db->quoteName(array('path')));
         $query->from($db->quoteName('#__menu'));
@@ -79,16 +153,9 @@ class plgSystemNewsTools extends JPlugin
 
         $url = JURI::root() . $path . '/' . $item->id . '-' . $data['alias'];
 
-        $article_data = array(
-            'id'        => 0,
-            'catid'     => $stub_catid,
-            'title'     => $title_prefix . ': ' . $data['title'],
-            'alias'     => $title_prefix_alias  . '-' . $data['alias'],
+        $stub_data = array(
+            'id'        => $stub_id,
             'introtext' => '<a href="' . $url . '">' . sprintf($this->params->get('readmore_message'), '<em>' . $data['title'] . '</em>') . '</a>',
-            'fulltext'  => '',
-            'state'     => 1,
-            'language'  => '*',
-            'access'    => 1,
             'urls'      => json_encode(array(
                 'urla'     => $url,
                 'urlatext' => $data['title'],
@@ -99,18 +166,10 @@ class plgSystemNewsTools extends JPlugin
                 'urlc'     => false,
                 'urlctext' => '',
                 'targetc'  => ''
-            )),
-            'metadata'  => json_encode(array(
-                'author'     => '',
-                'robots'     => '',
-                'rights'     => '',
-                'xreference' => ''
             ))
         );
-        #echo '<pre>'; var_dump($article_data); echo '</pre>'; exit;
-        $article_id = $this->createArticle($article_data);
 
-        if(!$article_id){
+        if (!$this->updateArticle($stub_data)) {
             JFactory::getApplication()->enqueueMessage(JText::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_ERROR', $cat->title), 'error');
         } else{
             JFactory::getApplication()->enqueueMessage(JText::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_SUCCESS', $cat->title), 'message');
@@ -157,32 +216,12 @@ class plgSystemNewsTools extends JPlugin
         return true;
     }
 
-    /**
-     * Runs on content preparation
-     *
-     * @param   string  $context  The context for the data
-     * @param   object  $data     An object containing the data for the form.
-     *
-     * @return  boolean
-     */
-    /*public function onContentPrepareData($context, $data)
-    {
-        #echo '<pre>'; var_dump($data); echo '</pre>'; exit;
-        // Check we are manipulating a valid form.
-        if ($context != 'com_content.article') {
-            return true;
-        }
-        if (is_object($data)) {
-
-        }
-    }*/
-
     protected function createArticle($data)
     {
         $data['rules'] = array(
             'core.edit.delete' => array(),
             'core.edit.edit' => array(),
-            'core.edit.state' => array(),
+            'core.edit.state' => array()
         );
 
         $basePath = JPATH_ADMINISTRATOR.'/components/com_content';
@@ -196,6 +235,19 @@ class plgSystemNewsTools extends JPlugin
             $id = $article_model->getItem()->id;
             return $id;
         }
+    }
 
+    protected function updateArticle($data)
+    {
+        $basePath = JPATH_ADMINISTRATOR.'/components/com_content';
+        require_once $basePath.'/models/article.php';
+        $article_model =  JModelLegacy::getInstance('Article','ContentModel');
+        // or  $config= array(); $article_model =  new ContentModelArticle($config);
+        if (!$article_model->save($data)) {
+            $err_msg = $article_model->getError();
+            return false;
+        } else {
+            return true;
+        }
     }
 }
