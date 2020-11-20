@@ -54,7 +54,7 @@ class plgSystemNewsTools extends JPlugin
         }
 
         if (!empty($stub_id)) {
-            $stubCreated = true;
+            $this->stubCreated = true;
             return; // But don't run if there's already been an article created.
         }
 
