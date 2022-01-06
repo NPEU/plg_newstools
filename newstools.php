@@ -64,8 +64,8 @@ class plgSystemNewsTools extends JPlugin
         $title_prefix = trim(trim($this->params->get('title_prefix')), ':');
         $title_prefix_alias = JApplication::stringURLSafe($title_prefix);
 
-        // Note we can't generatet the content yet as we might not have the new article id.
-        // However, we need to save the stud id in the article data so we're having to generate the
+        // Note we can't generate the content yet as we might not have the new article id.
+        // However, we need to save the stub id in the article data so we're having to generate the
         // stub now and update it later.
         $content = '';
 

@@ -42,6 +42,7 @@
             default=""
             label="PLG_SYSTEM_NEWSTOOLS_STUB_ID_LABEL"
             description="PLG_SYSTEM_NEWSTOOLS_STUB_ID_DESC"
+            disabled="disabled"
         />
      </fieldset>
   </fields>
