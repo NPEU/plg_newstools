@@ -33,7 +33,7 @@ class plgSystemNewsTools extends JPlugin
         $app = JFactory::getApplication();
         $db  = JFactory::getDbo();
 
-        if (!$app->isAdmin()) {
+        if (!$app->isClient('administrator')) {
             return; // Only run in admin
         }
 
@@ -120,7 +120,7 @@ class plgSystemNewsTools extends JPlugin
         $app = JFactory::getApplication();
         $db  = JFactory::getDbo();
 
-        if (!$app->isAdmin()) {
+        if (!$app->isClient('administrator')) {
             return; // Only run in admin
         }
 
