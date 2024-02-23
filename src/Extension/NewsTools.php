@@ -3,46 +3,100 @@
  * @package     Joomla.Plugin
  * @subpackage  System.NewsTools
  *
- * @copyright   Copyright (C) NPEU 2019.
+ * @copyright   Copyright (C) NPEU 2024.
  * @license     MIT License; see LICENSE.md
  */
 
+namespace NPEU\Plugin\System\NewsTools\Extension;
+
 defined('_JEXEC') or die;
+
+use Joomla\CMS\Factory;
+use Joomla\CMS\Filter\OutputFilter;
+use Joomla\CMS\Form\FormHelper;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\MVC\View\GenericDataException;
+use Joomla\CMS\Plugin\CMSPlugin;
+use Joomla\CMS\Table\Table;
+use Joomla\CMS\Uri\Uri;
+use Joomla\Event\Event;
+use Joomla\Event\SubscriberInterface;
+use Joomla\Registry\Registry;
 
 /**
  * Tools and Helpers for News Items.
  */
-class plgSystemNewsTools extends JPlugin
+class NewsTools extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $stubCreated = false;
     protected $stubID = false;
 
     /**
+     * An internal flag whether plugin should listen any event.
+     *
+     * @var bool
+     *
+     * @since   4.3.0
+     */
+    protected static $enabled = false;
+
+    /**
+     * Constructor
+     *
+     */
+    public function __construct($subject, array $config = [], bool $enabled = true)
+    {
+        // The above enabled parameter was taken from teh Guided Tour plugin but it ir always seems
+        // to be false so I'm not sure where this param is passed from. Overriding it for now.
+        $enabled = true;
+
+
+        #$this->loadLanguage();
+        $this->autoloadLanguage = $enabled;
+        self::$enabled          = $enabled;
+
+        parent::__construct($subject, $config);
+    }
+
+    /**
+     * function for getSubscribedEvents : new Joomla 4 feature
+     *
+     * @return array
+     *
+     * @since   4.3.0
+     */
+    public static function getSubscribedEvents(): array
+    {
+        return self::$enabled ? [
+            'onContentBeforeSave' => 'onContentBeforeSave',
+            'onContentAfterSave' => 'onContentAfterSave',
+            'onContentPrepareForm' => 'onContentPrepareForm',
+        ] : [];
+    }
+
+    /**
      * The save event.
      *
-     * @param   string   $context  The context
-     * @param   JTable   $item     The table
-     * @param   boolean  $isNew    Is new item
-     * @param   array    $data     The validated data
+     * @param   Event  $event
      *
      * @return  boolean
      */
-    public function onContentBeforeSave($context, $item, $isNew, $data = array())
+    public function onContentBeforeSave(Event $event): void
     {
-        $app = JFactory::getApplication();
-        $db  = JFactory::getDbo();
+        [$context, $object, $isNew, $data] = array_values($event->getArguments());
+
+        $app = Factory::getApplication();
 
         if (!$app->isClient('administrator')) {
             return; // Only run in admin
         }
 
         if (!$context == 'com_content.article') {
-            return; // Only run for new articles
+            return; // Only run for articles
         }
 
         if (empty($data['catid']) || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
-            #echo 'Not NT<pre>'; var_dump($data); echo '</pre>'; exit;
             return; // Only run for applicable catid's
         }
 
@@ -58,18 +112,15 @@ class plgSystemNewsTools extends JPlugin
             return; // But don't run if there's already been an article created.
         }
 
-        $cat = JTable::getInstance('category');
-        $cat->load($stub_catid);
-
         $title_prefix = trim(trim($this->params->get('title_prefix')), ':');
-        $title_prefix_alias = JApplication::stringURLSafe($title_prefix);
+        $title_prefix_alias = OutputFilter::stringURLSafe($title_prefix);
 
         // Note we can't generate the content yet as we might not have the new article id.
         // However, we need to save the stub id in the article data so we're having to generate the
         // stub now and update it later.
         $content = '';
 
-        $stub_data = array(
+        $stub_data = [
             'id'          => 0,
             'catid'       => $stub_catid,
             'title'       => $title_prefix . ': ' . $data['title'],
@@ -81,51 +132,52 @@ class plgSystemNewsTools extends JPlugin
             'language'    => '*',
             'access'      => 1,
             'urls'        => '',
-            'metadata'    => json_encode(array(
+            'metadata'    => json_encode([
                 'author'     => '',
                 'robots'     => '',
                 'rights'     => '',
                 'xreference' => ''
-            ))
-        );
+            ])
+            ];
 
         $stub_id = $this->createArticle($stub_data);
+        if (!$stub_id) {
+            return;
+        }
 
-        $registry = Joomla\Registry\Registry::getInstance('');
-        $registry->loadString($item->attribs);
+        $registry = new Registry;
+        $registry->loadString($object->attribs);
         $registry['stub_id'] = $stub_id;
         $new_attribs = $registry->toString();
 
-        $item->attribs = $new_attribs;
+        $object->attribs = $new_attribs;
 
         $this->stubID = $stub_id;
     }
 
     /**
-     * The save event.
      *
-     * @param   string   $context  The context
-     * @param   JTable   $item     The article data
-     * @param   boolean  $isNew    Is new item
-     * @param   array    $data     The validated data
+     * @param   Event  $event
      *
-     * @return void
+     * @return  void
      */
-    public function onContentAfterSave($context, $item, $isNew, $data = array())
+    public function onContentAfterSave(Event $event): void
     {
+        [$context, $object, $isNew, $data] = array_values($event->getArguments());
+
         if ($this->stubCreated) {
             return;
         }
 
-        $app = JFactory::getApplication();
-        $db  = JFactory::getDbo();
+        $app = Factory::getApplication();
+        $db  = Factory::getDbo();
 
         if (!$app->isClient('administrator')) {
             return; // Only run in admin
         }
 
         if (!$context == 'com_content.article') {
-            return; // Only run for new articles
+            return; // Only run for articles
         }
 
         if (empty($data['catid']) || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
@@ -134,29 +186,31 @@ class plgSystemNewsTools extends JPlugin
 
         $stub_catid = $data['attribs']['stub_catid'];
         $stub_id    = $this->stubID;
-
         if (empty($stub_catid)) {
             return; // Only run if a stub_catid set.
         }
 
-        $cat = JTable::getInstance('category');
-        $cat->load($stub_catid);
+        // This isn't used but keep for reference:
+        #$cat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
+        #$cat->load($stub_catid);
 
         // We need to find the URL of the category blog that will load this item:
         $query = $db->getQuery(true);
-        $query->select($db->quoteName(array('path')));
+        $query->select($db->quoteName(['path']));
         $query->from($db->quoteName('#__menu'));
         $query->where($db->quoteName('link') . ' = ' . $db->quote('index.php?option=com_content&view=category&layout=blog&id=' . $data['catid']));
 
         $db->setQuery($query);
         $path = $db->loadResult();
 
-        $url = JURI::root() . $path . '/' . $item->id . '-' . $data['alias'];
+        $url = Uri::getInstance()::root() . $path . '/' . $object->id . '-' . $data['alias'];
 
-        $stub_data = array(
+        $stub_data = [
             'id'        => $stub_id,
+            'catid'       => $stub_catid,
             'introtext' => '<a href="' . $url . '">' . sprintf($this->params->get('readmore_message'), '<em>' . $data['title'] . '</em>') . '</a>',
-            'urls'      => json_encode(array(
+            'articletext' => '',
+            'urls'      => json_encode([
                 'urla'     => $url,
                 'urlatext' => $data['title'],
                 'targeta'  => '',
@@ -166,29 +220,30 @@ class plgSystemNewsTools extends JPlugin
                 'urlc'     => false,
                 'urlctext' => '',
                 'targetc'  => ''
-            ))
-        );
+            ])
+        ];
 
         if (!$this->updateArticle($stub_data)) {
-            JFactory::getApplication()->enqueueMessage(JText::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_ERROR', $cat->title), 'error');
+            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_ERROR', $cat->title), 'error');
         } else{
-            JFactory::getApplication()->enqueueMessage(JText::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_SUCCESS', $cat->title), 'message');
+            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_SUCCESS', $cat->title), 'message');
         }
     }
 
     /**
      * Prepare form.
      *
-     * @param   JForm  $form  The form to be altered.
-     * @param   mixed  $data  The associated data for the form.
+     * @param   Event  $event
      *
      * @return  boolean
      */
-    public function onContentPrepareForm(JForm $form, $data)
+    public function onContentPrepareForm(Event $event): void
     {
-        if (!($form instanceof JForm)) {
+        [$form, $data] = array_values($event->getArguments());
+
+        if (!($form instanceof \Joomla\CMS\Form\Form)) {
             $this->_subject->setError('JERROR_NOT_A_FORM');
-            return false;
+            return;
         }
 
         if ($form->getName() != 'com_content.article') {
@@ -197,7 +252,7 @@ class plgSystemNewsTools extends JPlugin
 
         // When saving, $data is an empty array so we'll need to get the catid from the POSTed data:
         if (is_array($data) && empty($data)) {
-            $app = JFactory::getApplication();
+            $app = Factory::getApplication();
             $postData = $app->input->post->getArray();
             $catid = $postData['jform']['catid'];
         } else {
@@ -210,38 +265,52 @@ class plgSystemNewsTools extends JPlugin
             return; // Only run for applicable catid's
         }
 
-        // Add the extra fields to the form.
-        JForm::addFormPath(__DIR__ . '/forms');
+
+        // Add the extra fields to the form
+        FormHelper::addFormPath(dirname(dirname(__DIR__)) . '/forms');
         $form->loadFile('newstools', false);
-        return true;
+        return;
     }
 
     protected function createArticle($data)
     {
-        $data['rules'] = array(
-            'core.edit.delete' => array(),
-            'core.edit.edit' => array(),
-            'core.edit.state' => array()
-        );
+        $data['rules'] = [
+            'core.edit.delete' => [],
+            'core.edit.edit' => [],
+            'core.edit.state' => []
+        ];
 
-        $basePath = JPATH_ADMINISTRATOR.'/components/com_content';
-        require_once $basePath.'/models/article.php';
-        $article_model =  JModelLegacy::getInstance('Article','ContentModel');
-        // or  $config= array(); $article_model =  new ContentModelArticle($config);
+        $app = Factory::getApplication();
+        $article_model = $app->bootComponent('com_content')->getMVCFactory()->createModel('Article', 'Administrator', ['ignore_request' => true]);
+
         if (!$article_model->save($data)) {
+
             $err_msg = $article_model->getError();
+            throw new GenericDataException($err_msg, 500);
             return false;
         } else {
-            $id = $article_model->getItem()->id;
+            // I still can't find a sensible way of getting the ID of the item we just created from
+            // the model.
+            // `$article_model->getItem()->id;` just returns the curent item id, not the new one.
+            // Until I find a better way, I'm just querying the database:
+            $db = Factory::getDBO();
+            $query = 'SELECT id
+                FROM #__content
+                WHERE alias = "' . $data['alias'] . '"';
+
+            $db->setQuery($query);
+            $id = $db->loadResult();
+
             return $id;
         }
     }
 
     protected function updateArticle($data)
     {
-        $basePath = JPATH_ADMINISTRATOR.'/components/com_content';
-        require_once $basePath.'/models/article.php';
-        $article_model =  JModelLegacy::getInstance('Article','ContentModel');
+        $app = Factory::getApplication();
+
+        $article_model = $app->bootComponent('com_content')->getMVCFactory()->createModel('Article', 'Administrator', ['ignore_request' => true]);
+
         // or  $config= array(); $article_model =  new ContentModelArticle($config);
         if (!$article_model->save($data)) {
             $err_msg = $article_model->getError();
@@ -250,4 +319,5 @@ class plgSystemNewsTools extends JPlugin
             return true;
         }
     }
+
 }
