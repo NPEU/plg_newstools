@@ -71,7 +71,8 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         return self::$enabled ? [
             'onContentBeforeSave' => 'onContentBeforeSave',
             'onContentAfterSave' => 'onContentAfterSave',
-            'onContentPrepareForm' => 'onContentPrepareForm',
+            'onContentPrepareForm' => 'onContentPrepareForm'
+
         ] : [];
     }
 
