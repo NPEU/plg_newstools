@@ -23,6 +23,8 @@ use Joomla\Event\Event;
 use Joomla\Event\SubscriberInterface;
 use Joomla\Registry\Registry;
 
+use Joomla\CMS\Log\Log;
+
 /**
  * Tools and Helpers for News Items.
  */
@@ -97,15 +99,30 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
-        if (empty($data['catid']) || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
-            return; // Only run for applicable catid's
-        }
-
+        $catid      = $data['catid'];
         $stub_catid = $data['attribs']['stub_catid'];
         $stub_id    = $data['attribs']['stub_id'];
 
+        if (empty($catid) || !in_array($catid, $this->params->get('applicable_categories'))) {
+            return; // Only run for applicable catid's
+        }
+
         if (empty($stub_catid)) {
-            return; // Only run if a stub_catid set.
+            return; // Only run if a stub_catid is set.
+        }
+
+        // If the stub_catid and the actual catid are the same we have a problem so quit:
+        // Note the way it's set up from NPEU this can't happen so I'v not tested this, but keep
+        // for reference.
+        if ($catid == $stub_catid) {
+            $cat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
+            $cat->load($catid);
+
+            $stubcat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
+            $stubcat->load($stub_catid);
+
+            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_CAT_EQUAL_CAT_ERROR',  $stubcat->title, $cat->title), 'error');
+            return;
         }
 
         if (!empty($stub_id)) {
@@ -139,7 +156,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
                 'rights'     => '',
                 'xreference' => ''
             ])
-            ];
+        ];
 
         $stub_id = $this->createArticle($stub_data);
         if (!$stub_id) {
@@ -181,37 +198,44 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
-        if (empty($data['catid']) || !in_array($data['catid'], $this->params->get('applicable_categories'))) {
+        $catid      = $data['catid'];
+        $stub_catid = $data['attribs']['stub_catid'];
+        $stub_id    = $this->stubID;
+
+        if (empty($catid) || !in_array($catid, $this->params->get('applicable_categories'))) {
             return; // Only run for applicable catid's
         }
 
-        $stub_catid = $data['attribs']['stub_catid'];
-        $stub_id    = $this->stubID;
         if (empty($stub_catid)) {
-            return; // Only run if a stub_catid set.
+            return; // Only run if a stub_catid is set.
         }
 
-        // This isn't used but keep for reference:
-        #$cat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
-        #$cat->load($stub_catid);
+        if (empty($stub_id)) {
+            return; // Only run if a stub_id is set.
+        }
 
         // We need to find the URL of the category blog that will load this item:
         $query = $db->getQuery(true);
         $query->select($db->quoteName(['path']));
         $query->from($db->quoteName('#__menu'));
-        $query->where($db->quoteName('link') . ' = ' . $db->quote('index.php?option=com_content&view=category&layout=blog&id=' . $data['catid']));
+        $query->where($db->quoteName('link') . ' = ' . $db->quote('index.php?option=com_content&view=category&layout=blog&id=' . $catid));
+        $query->where($db->quoteName('published') . ' = 1');
 
         $db->setQuery($query);
         $path = $db->loadResult();
 
+        if (empty($path)) {
+            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_CAT_WARNING',  $stubcat->title), 'warning');
+        }
+
         $url = Uri::getInstance()::root() . $path . '/' . $object->id . '-' . $data['alias'];
 
         $stub_data = [
-            'id'        => $stub_id,
+            'id'          => $stub_id,
             'catid'       => $stub_catid,
-            'introtext' => '<a href="' . $url . '">' . sprintf($this->params->get('readmore_message'), '<em>' . $data['title'] . '</em>') . '</a>',
+            'introtext'   => '<a href="' . $url . '">' . sprintf($this->params->get('readmore_message'), '<em>' . $data['title'] . '</em>') . '</a>',
             'articletext' => '',
-            'urls'      => json_encode([
+            'urls'        => json_encode([
                 'urla'     => $url,
                 'urlatext' => $data['title'],
                 'targeta'  => '',
@@ -224,10 +248,13 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             ])
         ];
 
+        $stubcat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
+        $stubcat->load($stub_catid);
+
         if (!$this->updateArticle($stub_data)) {
-            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_ERROR', $cat->title), 'error');
+            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_ERROR', $stubcat->title), 'error');
         } else{
-            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_SUCCESS', $cat->title), 'message');
+            $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_SUCCESS', $stubcat->title), 'message');
         }
     }
 
