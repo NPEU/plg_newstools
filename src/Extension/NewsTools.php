@@ -93,7 +93,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run in admin
         }
 
-        if (!$context == 'com_content.article') {
+        if ($context != 'com_content.article') {
             return; // Only run for articles
         }
 
@@ -177,7 +177,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run in admin
         }
 
-        if (!$context == 'com_content.article') {
+        if ($context != 'com_content.article') {
             return; // Only run for articles
         }
 
