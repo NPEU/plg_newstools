@@ -11,6 +11,7 @@ namespace NPEU\Plugin\System\NewsTools\Extension;
 
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Categories\Categories;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Filter\OutputFilter;
 use Joomla\CMS\Form\FormHelper;
@@ -99,6 +100,10 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
+        if (empty($data['attribs'])) {
+            return;
+        }
+
         $catid      = $data['catid'];
         $stub_catid = $data['attribs']['stub_catid'];
         $stub_id    = $data['attribs']['stub_id'];
@@ -112,7 +117,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         }
 
         // If the stub_catid and the actual catid are the same we have a problem so quit:
-        // Note the way it's set up from NPEU this can't happen so I'v not tested this, but keep
+        // Note the way it's set up from NPEU this can't happen so I've not tested this, but keep
         // for reference.
         if ($catid == $stub_catid) {
             $cat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
@@ -171,6 +176,8 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         $object->attribs = $new_attribs;
 
         $this->stubID = $stub_id;
+
+        return;
     }
 
     /**
@@ -196,6 +203,10 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
 
         if ($context != 'com_content.article') {
             return; // Only run for articles
+        }
+
+        if (empty($data['attribs'])) {
+            return;
         }
 
         $catid      = $data['catid'];
@@ -248,14 +259,16 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             ])
         ];
 
-        $stubcat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
-        $stubcat->load($stub_catid);
+        $categories = Categories::getInstance('content');
+        $stubcat = $categories->get($stub_catid);
 
         if (!$this->updateArticle($stub_data)) {
             $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_ERROR', $stubcat->title), 'error');
         } else{
             $app->enqueueMessage(Text::sprintf( 'PLG_SYSTEM_NEWSTOOLS_STUB_SAVE_SUCCESS', $stubcat->title), 'message');
         }
+
+        return;
     }
 
     /**
