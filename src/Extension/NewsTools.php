@@ -100,7 +100,11 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
-        if (empty($data['attribs'])) {
+        if (empty($data['catid'])  || empty($data['attribs'])) {
+            return;
+        }
+
+        if (empty($data['attribs']['stub_catid']) || empty($data['attribs']['stub_id'])) {
             return;
         }
 
@@ -108,12 +112,8 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         $stub_catid = $data['attribs']['stub_catid'];
         $stub_id    = $data['attribs']['stub_id'];
 
-        if (empty($catid) || !in_array($catid, $this->params->get('applicable_categories'))) {
+        if (!in_array($catid, $this->params->get('applicable_categories'))) {
             return; // Only run for applicable catid's
-        }
-
-        if (empty($stub_catid)) {
-            return; // Only run if a stub_catid is set.
         }
 
         // If the stub_catid and the actual catid are the same we have a problem so quit:
