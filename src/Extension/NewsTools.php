@@ -205,24 +205,20 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
-        if (empty($data['attribs'])) {
+        if (empty($data['catid'])  || empty($data['attribs'])) {
+            return;
+        }
+
+        if (empty($data['attribs']['stub_catid']) || empty($data['attribs']['stub_id'])) {
             return;
         }
 
         $catid      = $data['catid'];
         $stub_catid = $data['attribs']['stub_catid'];
-        $stub_id    = $this->stubID;
+        $stub_id    = $data['attribs']['stub_id'];
 
-        if (empty($catid) || !in_array($catid, $this->params->get('applicable_categories'))) {
+        if (!in_array($catid, $this->params->get('applicable_categories'))) {
             return; // Only run for applicable catid's
-        }
-
-        if (empty($stub_catid)) {
-            return; // Only run if a stub_catid is set.
-        }
-
-        if (empty($stub_id)) {
-            return; // Only run if a stub_id is set.
         }
 
         // We need to find the URL of the category blog that will load this item:
