@@ -278,8 +278,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
     {
         [$form, $data] = array_values($event->getArguments());
 
-        if ($form && $form && !($form instanceof \Joomla\CMS\Form\Form)) {
-            $this->_subject->setError('JERROR_NOT_A_FORM');
+        if (!$form instanceof \Joomla\CMS\Form\Form) {
             return;
         }
 
