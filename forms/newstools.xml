@@ -14,7 +14,7 @@
             default="1"
             label="PLG_SYSTEM_NEWSTOOLS_BRAND_LABEL"
             description="PLG_SYSTEM_NEWSTOOLS_BRAND_DESC"
-            query="SELECT value, text FROM (SELECT 1 AS rank, NULL AS value, 'None' AS text UNION ALL SELECT 2 AS rank, CONCAT (alias, '-', id) AS value, name AS text FROM #__brands b WHERE b.catid = 171 ORDER BY text) a ORDER BY rank, text;"
+            query="SELECT value, text FROM (SELECT 1 AS level, NULL AS value, 'None' AS text UNION ALL SELECT 2 AS level, CONCAT (alias, '-', id) AS value, name AS text FROM #__brands b WHERE b.catid = 171 ORDER BY text) a ORDER BY level, text;"
             key_field="value"
             value_field="text"
         />
