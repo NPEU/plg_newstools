@@ -92,6 +92,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
 
         $app = Factory::getApplication();
 
+        $catid      = $data['catid'];
         if (!$app->isClient('administrator')) {
             return; // Only run in admin
         }
@@ -100,11 +101,12 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
-        if (empty($data['catid'])  || empty($data['attribs'])) {
+        if (empty($data['catid']) || empty($data['attribs'])) {
             return;
         }
 
-        if (empty($data['attribs']['stub_catid']) || empty($data['attribs']['stub_id'])) {
+        //if (empty($data['attribs']['stub_catid']) || empty($data['attribs']['stub_id'])) {
+        if (empty($data['attribs']['stub_catid'])) {
             return;
         }
 
@@ -119,6 +121,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         // If the stub_catid and the actual catid are the same we have a problem so quit:
         // Note the way it's set up from NPEU this can't happen so I've not tested this, but keep
         // for reference.
+
         if ($catid == $stub_catid) {
             $cat = $app->bootComponent('com_category')->getMVCFactory()->createTable('Category', 'Administrator');
             $cat->load($catid);
@@ -163,6 +166,8 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             ])
         ];
 
+
+
         $stub_id = $this->createArticle($stub_data);
         if (!$stub_id) {
             return;
@@ -173,7 +178,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         $registry['stub_id'] = $stub_id;
         $new_attribs = $registry->toString();
 
-        $object->attribs = $new_attribs;
+        //$object->attribs = $new_attribs;
 
         $this->stubID = $stub_id;
 
@@ -205,17 +210,19 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
             return; // Only run for articles
         }
 
-        if (empty($data['catid'])  || empty($data['attribs'])) {
+        if (empty($data['catid']) || empty($data['attribs'])) {
             return;
         }
 
-        if (empty($data['attribs']['stub_catid']) || empty($data['attribs']['stub_id'])) {
+        //if (empty($data['attribs']['stub_catid']) || empty($data['attribs']['stub_id'])) {
+        if (empty($data['attribs']['stub_catid']) || empty($this->stubID)) {
             return;
         }
 
         $catid      = $data['catid'];
         $stub_catid = $data['attribs']['stub_catid'];
-        $stub_id    = $data['attribs']['stub_id'];
+        //$stub_id    = $data['attribs']['stub_id'];
+        $stub_id    = $this->stubID;
 
         if (!in_array($catid, $this->params->get('applicable_categories'))) {
             return; // Only run for applicable catid's
