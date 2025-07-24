@@ -92,7 +92,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
 
         $app = Factory::getApplication();
 
-        $catid      = $data['catid'];
+
         if (!$app->isClient('administrator')) {
             return; // Only run in admin
         }
@@ -178,7 +178,7 @@ class NewsTools extends CMSPlugin implements SubscriberInterface
         $registry['stub_id'] = $stub_id;
         $new_attribs = $registry->toString();
 
-        //$object->attribs = $new_attribs;
+        $object->attribs = $new_attribs;
 
         $this->stubID = $stub_id;
 
